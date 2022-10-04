@@ -1,37 +1,22 @@
 import './css/styles.css';
+import InfiniteScroll from 'infinite-scroll';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import ImagesApiService from './fetchImages';
 import SimpleLightbox from 'simplelightbox';
 import "simplelightbox/dist/simple-lightbox.min.css";
-import LoadMoreBtn from './load-more-btn';
+
 
 const refs = {
     seachForm: document.querySelector('.search-form'),
-    loadMoreBtn: document.querySelector('.load-more'),
     galleryContainer: document.querySelector('.gallery'),
-    loadingBtn: document.querySelector('.label'),
+    sentinel: document.querySelector('#sentinel')
 };
 let hitSumm = 0;
 const imagesApiService = new ImagesApiService();
 
-const loadMoreBtn = new LoadMoreBtn({
-  selector: '[data-action="load-more"]',
-  hidden: true,
-});
-
-loadMoreBtn.disable();
-
 refs.seachForm.addEventListener('submit', onSearch);
-loadMoreBtn.refs.button.addEventListener('click', onLoadMore);
 
-// Бесконечного скролла 
-//const options = {
-//  rootMargin: '50px',
-//  root: null,
-//  threshold: 0.3
-//};
-//const observer = new IntersectionObserver(onLoadMore, options);
-//observer.observe(refs.loadMoreBtn);  
+
 
 function onSearch(e) {
    e.preventDefault();
@@ -47,7 +32,6 @@ function onSearch(e) {
      
   }
 
-   loadMoreBtn.show();
    clearImagesContainer();
 
    hitSumm = 0;
@@ -58,22 +42,16 @@ function onSearch(e) {
 function clearImagesContainer () {
     refs.galleryContainer.innerHTML = '';
 }
- //observer.observe(refs.loadMoreBtn);     
-function onLoadMore() {      
-  imagesApiService.incrementPage();
-  fetchImages();
-}   
-  
+      
+
 async function fetchImages(){
-       loadMoreBtn.disable(); 
+      
        const r = await imagesApiService.fetchImages();
        const { hits, total } = r;   
       hitSumm += hits.length;
 
       if (!hits.length) {
         Notify.warning(`Sorry, there are no images matching your search query. Please try again.`);
-        //loadMoreBtn.disable();
-        refs.loadMoreBtn.classList.add('is-hidden');
         return;
       };  
 
@@ -83,12 +61,10 @@ async function fetchImages(){
     if (hitSumm < total) {
     
         Notify.success(`Hooray! We found ${total} images !!!`);   
-        //refs.loadMoreBtn.classList.remove('is-hidden');
-        loadMoreBtn.enable();
-    }
+      }
     
     if (hitSumm >= total) {
-      refs.loadMoreBtn.classList.add('is-hidden');
+     
         Notify.info(
             'We re sorry, but you have reached the end of search results.'
             
@@ -138,4 +114,24 @@ let lightbox = new SimpleLightbox('.gallery a', {
           captionsData: 'alt',
           captionDelay: 250,
         });
+
+        const onEntry = entries => {
+          entries.forEach(entry => {
+           
+            if (entry.isIntersecting && imagesApiService.searchQuery !== '') {
+             console.log ("Пора грузить статьи" + Date.now());
+             imagesApiService.fetchImages().then(hits => {
+                
+               appendImagesMarkup(hits);
+                
+               imagesApiService.incrementPage();
+              });   
+           }
+            });
+          };
+         
+const observer = new IntersectionObserver(onEntry, {
+  rootMargin: '150px',
+});
+observer.observe (refs.sentinel);
 
