@@ -78,6 +78,7 @@ function appendImagesMarkup(hits) {
           largeImageURL, 
           tags, 
           likes, 
+
           views,
           comments,
           downloads
@@ -115,16 +116,18 @@ let lightbox = new SimpleLightbox('.gallery a', {
           captionDelay: 250,
         });
 
-        const onEntry = entries => {
-          entries.forEach(entry => {
+const onEntry = entries => {
+    entries.forEach(entry => {
            
             if (entry.isIntersecting && imagesApiService.searchQuery !== '') {
              console.log ("Пора грузить статьи" + Date.now());
+             
              imagesApiService.fetchImages().then(hits => {
-                
-               appendImagesMarkup(hits);
-                
+                console.log(hits.hits);
+               appendImagesMarkup(hits.hits);
+               console.log(appendImagesMarkup(hits.hits));
                imagesApiService.incrementPage();
+               console.log(imagesApiService.incrementPage());
               });   
            }
             });
